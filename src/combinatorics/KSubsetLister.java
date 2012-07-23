@@ -27,14 +27,20 @@ public class KSubsetLister<T> implements Iterable<List<T>> {
         this.k = k;
     }
     
-    // TODO : more efficiently, with multiplicative formula
-    public static int choose(int n, int k) {
-    	return f(n) / (f(k) * f(n - k));
+    private static int[] getBinomials(int n) {
+    	int[] b = new int[n + 1];
+    	b[0] = 1;
+    	for (int i = 1; i <= n; ++i) {
+    		b[i] = 1;
+    		for (int j = i - 1; j > 0; --j) {
+    			b[j] += b[j - 1];
+    		}
+    	}
+    	return b;
     }
     
-    // TODO : remove!!
-    private static int f(int n) {
-    	return (n <= 1)? 1 : n * f(n - 1);
+    public static int choose(int n, int k) {
+    	return getBinomials(n)[k];
     }
     
     public int lexRank(BitSet subSetVector) {

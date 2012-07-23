@@ -28,14 +28,36 @@ public class MultiKSubsetListerTest {
     }
     
     @Test
+    public void unrank_23_5_3_Test() {
+        int n = 5;
+        int k = 3;
+        MultiKSubsetLister<Integer> lister = new MultiKSubsetLister<Integer>(k, getNumbers(n));
+        List<Integer> subSet = lister.lexUnrank(23);
+        System.out.println(subSet);
+    }
+    
+    @Test
     public void unrankAllTest() {
-        int n = 8;
+        int n = 5;
         int k = 3;
         MultiKSubsetLister<Integer> lister = new MultiKSubsetLister<Integer>(k, getNumbers(n));
         for (int rank = 0; rank < KSubsetLister.choose(n + k - 1, k); rank++) {
         	List<Integer> subSet = lister.lexUnrank(rank);
         	System.out.println(rank + "\t" + subSet);
         }
+    }
+    
+    @Test
+    public void unrankAllWhereKGreaterThanN() {
+        int n = 10;
+        int k = 4;
+        MultiKSubsetLister<Integer> lister = new MultiKSubsetLister<Integer>(k, getNumbers(n));
+        int max = KSubsetLister.choose(n + k - 1, k);
+        for (int rank = 0; rank < max; rank++) {
+        	List<Integer> subSet = lister.lexUnrank(rank);
+        	System.out.println(rank + "\t" + subSet);
+        }
+        System.out.println("max = " + max);
     }
     
 }
