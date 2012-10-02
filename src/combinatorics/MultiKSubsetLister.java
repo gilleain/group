@@ -17,6 +17,8 @@ public class MultiKSubsetLister<T> implements Iterable<List<T>> {
 	
 	private final List<T> elements;
 	
+	private final int k;
+	
 	private final int size;
 	
 	private final KSubsetLister<Integer> indexSubsetLister;
@@ -24,6 +26,7 @@ public class MultiKSubsetLister<T> implements Iterable<List<T>> {
 	public MultiKSubsetLister(int k, List<T> elements) {
         this.elements = elements;
         this.size = elements.size();
+        this.k = k;
         indexSubsetLister = KSubsetLister.getIndexLister(k, size + k - 1);
     }
 	
@@ -52,7 +55,7 @@ public class MultiKSubsetLister<T> implements Iterable<List<T>> {
 
 	@Override
 	public Iterator<List<T>> iterator() {
-		final int maxRank = (int) Math.pow(2, size);
+		final int maxRank = KSubsetLister.choose(size + k - 1, k);
 		return new Iterator<List<T>>() {
             int rank = 0;
 

@@ -19,6 +19,16 @@ public class MultiKSubsetListerTest {
     }
     
     @Test
+    public void twoFromTwoTest() {
+    	int n = 2;
+    	int k = 2;
+    	MultiKSubsetLister<Integer> lister = new MultiKSubsetLister<Integer>(k, getNumbers(n));
+    	for (List<Integer> subSet : lister) {
+    		System.out.println(subSet);
+    	}
+    }
+    
+    @Test
     public void unrankTest() {
         int n = 10;
         int k = 3;
