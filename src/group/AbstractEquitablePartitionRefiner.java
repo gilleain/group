@@ -104,6 +104,7 @@ public abstract class AbstractEquitablePartitionRefiner {
                 }
                 currentBlockIndex++;
             }
+//            System.out.println(b);
 
             // the partition is discrete
             if (b.size() == numberOfVertices) {

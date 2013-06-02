@@ -2,6 +2,8 @@ package group;
 
 import java.util.Set;
 
+import combinatorics.DisjointSetForest;
+
 /**
  * Refines vertex partitions until they are discrete, and therefore equivalent
  * to permutations. These permutations are automorphisms of the graph that was
@@ -121,6 +123,60 @@ public abstract class AbstractDiscretePartitionRefiner {
     }
     
     /**
+     * The automorphism partition is a partition of the elements of the group.
+     * 
+     * @return a partition of the elements of group 
+     */
+    public Partition getAutomorphismPartition() {
+        final int n = group.getSize();
+        final DisjointSetForest forest = new DisjointSetForest(n);
+        group.apply(new SSPermutationGroup.Backtracker() {
+
+            boolean[] inOrbit = new boolean[n];
+            private int inOrbitCount = 0;
+            private boolean isFinished;
+
+            @Override
+            public boolean finished() {
+                return isFinished;
+            }
+
+            @Override
+            public void applyTo(Permutation p) {
+                for (int elementX = 0; elementX < n; elementX++) {
+                    if (inOrbit[elementX]) {
+                        continue;
+                    } else {
+                        int elementY = p.get(elementX);
+                        while (elementY != elementX) {
+                            if (!inOrbit[elementY]) {
+                                inOrbitCount++;
+                                inOrbit[elementY] = true;
+                                forest.makeUnion(elementX, elementY);
+                            }
+                            elementY = p.get(elementY);
+                        }
+                    }
+                }
+                if (inOrbitCount == n) {
+                    isFinished = true;
+                }
+            }
+        });
+
+        // convert to a partition
+        Partition partition = new Partition();
+        for (int[] set : forest.getSets()) {
+            partition.addCell(set);
+        }
+
+        // necessary for comparison by string
+        partition.order();
+        return partition;
+    }
+
+    
+    /**
      * Check for a canonical graph, without generating the whole 
      * automorphism group.
      * 
@@ -148,6 +204,7 @@ public abstract class AbstractDiscretePartitionRefiner {
     }
     
     public void refine(SSPermutationGroup group, Partition coarser) {
+//    	System.out.println(coarser);
         int vertexCount = getVertexCount();
         
         Partition finer = equitableRefiner.refine(coarser);
@@ -167,6 +224,7 @@ public abstract class AbstractDiscretePartitionRefiner {
         }
         
         if (finer.size() == vertexCount) {    // partition is discrete
+//        	System.out.println("Disc :\t" + finer + "\t" + result);
             if (!bestExist) {
                 best = finer.toPermutation();
                 first = finer.toPermutation();
