@@ -14,112 +14,85 @@ import combinatorics.DisjointSetForest;
  */
 public abstract class AbstractDiscretePartitionRefiner {
     
+    /**
+     * The result of a comparison between the current partition 
+     * and the best permutation found so far.
+     *
+     */
     public enum Result { WORSE, EQUAL, BETTER };
     
+    /**
+     * If true, then at least one partition has been refined 
+     * to a permutation (IE : to a discrete partition).
+     */
     private boolean bestExist;
     
+    /**
+     * The best permutation is the one that gives the maximal 
+     * half-matrix string (so far) when applied to the graph.
+     */
     private Permutation best;
     
+    /**
+     * The first permutation seen when refining.
+     */
     private Permutation first;
     
+    /**
+     * An equitable refiner.
+     */
     private IEquitablePartitionRefiner equitableRefiner;
     
-    private SSPermutationGroup group;
-    
-    private boolean checkVertexColors;
+    /**
+     * The automorphism group that is used to prune the search.
+     */
+    private PermutationGroup group;
     
     public AbstractDiscretePartitionRefiner() {
-        this(false);
-    }
-    
-    public AbstractDiscretePartitionRefiner(boolean checkVertexColors) {
-        this.checkVertexColors = checkVertexColors;
         this.bestExist = false;
         this.best = null;
         this.equitableRefiner = null;
     }
     
+    /**
+     * Get the number of vertices in the graph to be refined.
+     *  
+     * @return a count of the vertices in the underlying graph
+     */
     public abstract int getVertexCount();
     
-    public abstract boolean isConnected(int i, int j);
+    /**
+     * Get the connectivity between two vertices as an integer, to allow 
+     * for multigraphs : so a single edge is 1, a double edge 2, etc. If 
+     * there is no edge, then 0 should be returned. 
+     * 
+     * @param vertexI a vertex of the graph
+     * @param vertexJ a vertex of the graph
+     * @return the multiplicity of the edge (0, 1, 2, 3, ...)
+     */
+    public abstract int getConnectivity(int vertexI, int vertexJ);
     
-    public abstract boolean sameColor(int i, int j);
-    
-    public void setup(SSPermutationGroup group, IEquitablePartitionRefiner refiner) {
+    /**
+     * Setup the group and refiner; it is important to call this method before
+     * calling {@link #refine} otherwise the refinement process will fail.
+     * 
+     * @param group a group (possibly empty) of automorphisms
+     * @param refiner the equitable refiner
+     */
+    public void setup(PermutationGroup group, IEquitablePartitionRefiner refiner) {
         this.bestExist = false;
         this.best = null;
         this.group = group;
         this.equitableRefiner = refiner;
     }
     
+    /**
+     * Check that the first refined partition is the identity.
+     * 
+     * @return true if the first is the identity permutation
+     */
     public boolean firstIsIdentity() {
         return this.first.isIdentity();
-    }
-    
-    public long getCertificate() {
-        return calculateCertificate(this.getBest());
-    }
-    
-    public long calculateCertificate(Permutation p) {
-        int k = 0;
-        long certificate = 0;
-        int n = getVertexCount();
-        for (int j = n - 1; j > 0; j--) {
-        	for (int i = j - 1; i >= 0; i--) {
-        		if (isConnected(p.get(i), p.get(j))) {
-        			certificate += (int)Math.pow(2, k);
-        		}
-        		k++;
-        	}
-        }
-//        for (int i = 0; i < n - 1; i++) {
-//            for (int j = i + 1; j < n; j++) {
-//                if (isConnected(p.get(i), p.get(j))) {
-//                    certificate += (int)Math.pow(2, k);
-//                }
-//                k++;
-//            }
-//        }
-        return certificate;
-    }
-    
-    public String getHalfMatrixString(Permutation p) {
-        String hms = "";
-        int n = p.size();
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                if (isConnected(p.get(i), p.get(j))) {
-                    hms += "1";
-                } else {
-                    hms += "0";
-                }
-            }
-        }
-        return hms;
-    }
-    
-    public String getBestHalfMatrixString() {
-       return getHalfMatrixString(best);
-    }
-    
-    public String getFirstHalfMatrixString() {
-        return getHalfMatrixString(first);
-     }
-    
-    public String getHalfMatrixString() {
-        return getHalfMatrixString(new Permutation(getVertexCount()));
-    }
-    
-    public SSPermutationGroup getGroup() {
-        return this.group;
-    }
-    
-    public Permutation getBest() {
-        return this.best;
-    }
-    
-    public Permutation getFirst() {
-        return this.first;
     }
     
     /**
@@ -130,17 +103,17 @@ public abstract class AbstractDiscretePartitionRefiner {
     public Partition getAutomorphismPartition() {
         final int n = group.getSize();
         final DisjointSetForest forest = new DisjointSetForest(n);
-        group.apply(new SSPermutationGroup.Backtracker() {
-
+        group.apply(new PermutationGroup.Backtracker() {
+    
             boolean[] inOrbit = new boolean[n];
             private int inOrbitCount = 0;
             private boolean isFinished;
-
+    
             @Override
             public boolean finished() {
                 return isFinished;
             }
-
+    
             @Override
             public void applyTo(Permutation p) {
                 for (int elementX = 0; elementX < n; elementX++) {
@@ -163,18 +136,110 @@ public abstract class AbstractDiscretePartitionRefiner {
                 }
             }
         });
-
+    
         // convert to a partition
         Partition partition = new Partition();
         for (int[] set : forest.getSets()) {
             partition.addCell(set);
         }
-
+    
         // necessary for comparison by string
         partition.order();
         return partition;
     }
 
+    public long getCertificate() {
+        return calculateCertificate(this.getBest());
+    }
+    
+    public long calculateCertificate(Permutation p) {
+        int k = 0;
+        long certificate = 0;
+        int n = getVertexCount();
+        for (int j = n - 1; j > 0; j--) {
+        	for (int i = j - 1; i >= 0; i--) {
+        	    // XXX FIXME : won't work properly with edge multiplicity > 1! 
+        		if (getConnectivity(p.get(i), p.get(j)) > 0) {
+        			certificate += (int)Math.pow(2, k);
+        		}
+        		k++;
+        	}
+        }
+        return certificate;
+    }
+    
+    /**
+     * Get the upper-half of the adjacency matrix under the permutation.
+     * 
+     * @param p a permutation of the adjacency matrix
+     * @return a string containing the permuted values of half the matrix
+     */
+    public String getHalfMatrixString(Permutation permutation) {
+        StringBuilder builder = new StringBuilder(permutation.size());
+        int size = permutation.size();
+        for (int indexI = 0; indexI < size - 1; indexI++) {
+            for (int indexJ = indexI + 1; indexJ < size; indexJ++) {
+                builder.append(getConnectivity(
+                        permutation.get(indexI), permutation.get(indexJ))
+                );
+            }
+        }
+        return builder.toString();
+    }
+    
+    /**
+     * Get the half-matrix string under the best permutation.
+     * 
+     * @return the upper-half adjacency matrix string permuted by the best
+     */
+    public String getBestHalfMatrixString() {
+       return getHalfMatrixString(best);
+    }
+    
+    /**
+     * Get the half-matrix string under the first permutation.
+     * 
+     * @return the upper-half adjacency matrix string permuted by the first
+     */
+    public String getFirstHalfMatrixString() {
+        return getHalfMatrixString(first);
+     }
+    
+    /**
+     * Get the initial (unpermuted) half-matrix string.
+     * 
+     * @return the upper-half adjacency matrix string 
+     */
+    public String getHalfMatrixString() {
+        return getHalfMatrixString(new Permutation(getVertexCount()));
+    }
+    
+    /**
+     * Get the automorphism group used to prune the search.
+     * 
+     * @return the automorphism group
+     */
+    public PermutationGroup getAutomorphismGroup() {
+        return this.group;
+    }
+    
+    /**
+     * Get the best permutation found.
+     * 
+     * @return the permutation that gives the maximal half-matrix string
+     */
+    public Permutation getBest() {
+        return this.best;
+    }
+    
+    /**
+     * Get the first permutation reached by the search.
+     * 
+     * @return the first permutation reached
+     */
+    public Permutation getFirst() {
+        return this.first;
+    }
     
     /**
      * Check for a canonical graph, without generating the whole 
@@ -184,6 +249,8 @@ public abstract class AbstractDiscretePartitionRefiner {
      */
     public boolean isCanonical() {
         return isCanonical(Partition.unit(getVertexCount()));
+        // TODO : check this alternative!
+        // return best.isIdentity();
     }
     
     public boolean isCanonical(Partition partition) {
@@ -199,12 +266,23 @@ public abstract class AbstractDiscretePartitionRefiner {
         }
     }
     
-    public void refine(Partition p) {
-        refine(this.group, p);
+    /**
+     * Refine the partition. The main entry point for subclasses.
+     * 
+     * @param partition the initial partition of the vertices
+     */
+    public void refine(Partition partition) {
+        refine(this.group, partition);
     }
     
-    public void refine(SSPermutationGroup group, Partition coarser) {
-//    	System.out.println(coarser);
+    /**
+     * Does the work of the class, that refines a coarse partition into a finer
+     * one using the supplied automorphism group to prune the search.
+     * 
+     * @param group the automorphism group of the graph
+     * @param coarser the partition to refine
+     */
+    public void refine(PermutationGroup group, Partition coarser) {
         int vertexCount = getVertexCount();
         
         Partition finer = equitableRefiner.refine(coarser);
@@ -215,16 +293,15 @@ public abstract class AbstractDiscretePartitionRefiner {
         }
         
         Permutation pi1 = new Permutation(firstNonDiscreteCell);
-        Permutation pi2 = new Permutation(vertexCount);
         
         Result result = Result.BETTER;
         if (bestExist) {
-            finer.setAsPermutation(pi1, firstNonDiscreteCell);
+            pi1 = finer.setAsPermutation(firstNonDiscreteCell);
             result = compareRowwise(pi1);
         }
         
-        if (finer.size() == vertexCount) {    // partition is discrete
-//        	System.out.println("Disc :\t" + finer + "\t" + result);
+        // partition is discrete
+        if (finer.size() == vertexCount) {
             if (!bestExist) {
                 best = finer.toPermutation();
                 first = finer.toPermutation();
@@ -233,10 +310,7 @@ public abstract class AbstractDiscretePartitionRefiner {
                 if (result == Result.BETTER) {
                     best = new Permutation(pi1);
                 } else if (result == Result.EQUAL) {
-                    pi2 = pi1.multiply(best.invert());
-                    if (!checkVertexColors || colorsAutomorphic(pi2)) {
-                        group.enter(pi2);
-                    }
+                    group.enter(pi1.multiply(best.invert()));
                 }
             }
         } else {
@@ -249,38 +323,34 @@ public abstract class AbstractDiscretePartitionRefiner {
                         
                         this.refine(group, nextPartition);
                         
-                        Permutation permF = new Permutation(vertexCount);
-                        Permutation invF = new Permutation(vertexCount);
+                        int[] permF = new int[vertexCount];
+                        int[] invF = new int[vertexCount];
+                        for (int i = 0; i < vertexCount; i++) {
+                            permF[i] = i;
+                            invF[i] = i;
+                        }
                         
                         for (int j = 0; j <= firstNonDiscreteCell; j++) {
                             int x = nextPartition.getFirstInCell(j);
-                            int i = invF.get(x);
-                            int h = permF.get(j);
-                            permF.set(j, x);
-                            permF.set(i, h);
-                            invF.set(h, i);
-                            invF.set(x, j);
+                            int i = invF[x];
+                            int h = permF[j];
+                            permF[j] = x;
+                            permF[i] = h;
+                            invF[h] = i;
+                            invF[x] = j;
                         }
-                        group.changeBase(permF);
+                        Permutation pPermF = new Permutation(permF);
+                        group.changeBase(pPermF);
                         for (int j = 0; j < vertexCount; j++) {
                             Permutation g = group.get(firstNonDiscreteCell, j);
-                            if (g != null) blockCopy.remove(g.get(vertexInBlock));
+                            if (g != null) {
+                                blockCopy.remove(g.get(vertexInBlock));
+                            }
                         }
                     }
                 }
             }
         }
-    }
-    
-    private boolean colorsAutomorphic(Permutation p) {
-        for (int i = 0; i < p.size(); i++) {
-            if (sameColor(i, p.get(i))) {
-                continue;
-            } else {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -290,12 +360,12 @@ public abstract class AbstractDiscretePartitionRefiner {
      * @param perm the permutation to check
      * @return BETTER, EQUAL, or WORSE
      */
-    public Result compareColumnwise(Permutation perm) {
+    private Result compareRowwise(Permutation perm) {
         int m = perm.size();
-        for (int i = 1; i < m; i++) {
-            for (int j = 0; j < i; j++) {
-                int x = isAdjacent(best.get(i), best.get(j));
-                int y = isAdjacent(perm.get(i), perm.get(j));
+        for (int i = 0; i < m - 1; i++) {
+            for (int j = i + 1; j < m; j++) {
+                int x = getConnectivity(best.get(i), best.get(j));
+                int y = getConnectivity(perm.get(i), perm.get(j));
                 if (x > y) return Result.WORSE;
                 if (x < y) return Result.BETTER;
             }
@@ -303,25 +373,4 @@ public abstract class AbstractDiscretePartitionRefiner {
         return Result.EQUAL;
     }
     
-    public Result compareRowwise(Permutation perm) {
-        int m = perm.size();
-        for (int i = 0; i < m - 1; i++) {
-            for (int j = i + 1; j < m; j++) {
-                int x = isAdjacent(best.get(i), best.get(j));
-                int y = isAdjacent(perm.get(i), perm.get(j));
-                if (x > y) return Result.WORSE;
-                if (x < y) return Result.BETTER;
-            }
-        }
-        return Result.EQUAL;
-    }
-
-    private int isAdjacent(int i, int j) {
-        if (isConnected(i, j)) { 
-            return 1; 
-        } else {
-            return 0;
-        }
-    }
-
 }

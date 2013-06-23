@@ -113,6 +113,7 @@ public class PartitionCalculator {
                 m -= n;
             }
         }
-        return new Partition(a);
+//        return new Partition(a);
+        return null;    // TODO FIXME
     }
 }

@@ -1,6 +1,7 @@
 package group;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -17,6 +18,9 @@ import java.util.TreeSet;
  */
 public class Partition {
 
+    /**
+     * The subsets of the partition, known as cells.
+     */
     private List<SortedSet<Integer>> cells;
     
     /**
@@ -24,17 +28,6 @@ public class Partition {
      */
     public Partition() {
         this.cells = new ArrayList<SortedSet<Integer>>();
-    }
-    
-    /**
-     * XXX - isn't this confusing a partition of a set with a partition of an integer!?
-     * @param parts
-     */
-    public Partition(int[] parts) {
-        this();
-        for (int part : parts) {
-            addCell(part);
-        }
     }
     
     /**
@@ -46,6 +39,18 @@ public class Partition {
         this();
         for (SortedSet<Integer> block : other.cells) {
             this.cells.add(new TreeSet<Integer>(block));
+        }
+    }
+    
+    /**
+     * Constructor to make a partition from an array of int arrays.
+     * 
+     * @param cellData the partition to copy
+     */
+    public Partition(int[][] cellData) {
+        this();
+        for (int[] aCellData : cellData) {
+            addCell(aCellData);
         }
     }
     
@@ -64,7 +69,30 @@ public class Partition {
         }
         return unit;
     }
-    
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Partition partition = (Partition) o;
+
+        return cells != null ? cells.equals(partition.cells) : partition.cells == null;
+
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public int hashCode() {
+    	return cells != null ? cells.hashCode() : 0;
+    }
+
     /**
      * Gets the size of the partition, in terms of the number of cells.
      * 
@@ -75,9 +103,9 @@ public class Partition {
     }
     
     /**
-     * The total size, as the sums of the sizes of the cells.
+     * Calculate the size of the partition as the sum of the sizes of the cells.
      * 
-     * @return the number of elements in all cells
+     * @return the number of elements in the partition
      */
     public int numberOfElements() {
         int n = 0;
@@ -95,9 +123,7 @@ public class Partition {
      */
     public boolean isDiscrete() {
         for (SortedSet<Integer> cell : cells) {
-            if (cell.size() == 1) {
-                continue;
-            } else {
+            if (cell.size() != 1) {
                 return false;
             }
         }
@@ -117,6 +143,12 @@ public class Partition {
         return p;
     }
     
+    /**
+     * Check whether the cells are ordered such that for cells i and j, 
+     * first(j) > first(i) and last(j) > last(i).
+     *  
+     * @return true if all cells in the partition are ordered
+     */
     public boolean inOrder() {
         SortedSet<Integer> prev = null;
         for (SortedSet<Integer> cell : cells) {
@@ -213,18 +245,19 @@ public class Partition {
         return r;
     }
     
-    
     /**
-     * Fill the elements of the permutation from the first element of each
+     * Fill the elements of a permutation from the first element of each
      * cell, up to the point <code>upTo</code>.
      * 
-     * @param permutation the permutation to fill with elements
-     * @param upTo the point to stop at
+     * @param upTo take values from cells up to this one
+     * @return the permutation representing the first element of each cell
      */
-    public void setAsPermutation(Permutation permutation, int upTo) {
+    public Permutation setAsPermutation(int upTo) {
+        int[] p = new int[upTo];
         for (int i = 0; i < upTo; i++) {
-            permutation.set(i, this.cells.get(i).first());
+            p[i] = this.cells.get(i).first();
         }
+        return new Permutation(p);
     }
     
     /**
@@ -245,7 +278,7 @@ public class Partition {
      */
     public int getIndexOfFirstNonDiscreteCell() {
         for (int i = 0; i < this.cells.size(); i++) {
-            if (this.cells.get(i).size() > 1) return i;
+            if (!isDiscreteCell(i)) return i;
         }
         return -1;  // XXX
     }
@@ -287,29 +320,29 @@ public class Partition {
     /**
      * Adds a new cell to the end of the partition.
      * 
-     * @param cell the cell to add
+     * @param elements the collection of elements to put in the cell
      */
-    public void addCell(SortedSet<Integer> cell) {
-        this.cells.add(cell);
+    public void addCell(Collection<Integer> elements) {
+    	cells.add(new TreeSet<Integer>(elements));
     }
     
     /**
-     * Add a cell as a list of elements.
+     * Add an element to a particular cell.
      * 
-     * @param cellElements the cell elements to add
+     * @param index the index of the cell to add to
+     * @param element the element to add
      */
-    public void addCell(List<Integer> cellElements) {
-        SortedSet<Integer> cell = new TreeSet<Integer>();
-        cell.addAll(cellElements);
-        this.cells.add(cell);
-    }
-    
     public void addToCell(int index, int element) {
-        cells.get(index).add(element);
+    	if (cells.size() < index + 1) {
+    		addSingletonCell(element);
+    	} else {
+    		cells.get(index).add(element);
+    	}
     }
     
     /**
      * Insert a cell into the partition at the specified index.
+     * 
      * @param index the index of the cell to add
      * @param cell the cell to add
      */
@@ -331,19 +364,38 @@ public class Partition {
      * Sort the cells in increasing order.
      */
     public void order() {
-    	Collections.sort(cells, new Comparator<SortedSet<Integer>>() {
+        Collections.sort(cells, new Comparator<SortedSet<Integer>>() {
 
-			@Override
-			public int compare(SortedSet<Integer> cellA, SortedSet<Integer> cellB) {
-				return cellA.first().compareTo(cellB.first());
-			}
-    		
-    	});
+            @Override
+            public int compare(SortedSet<Integer> cellA, SortedSet<Integer> cellB) {
+                return cellA.first().compareTo(cellB.first());
+            }
+
+        });
     }
     
-    /* (non-Javadoc)
-     * @see java.lang.Object#toString()
+    
+    /**
+     * Check that two elements are in the same cell of the partition.
+     * 
+     * @param elementI an element in the partition
+     * @param elementJ an element in the partition
+     * @return true if both elements are in the same cell
      */
+    public boolean inSameCell(int elementI, int elementJ) {
+        for (int cellIndex = 0; cellIndex < size(); cellIndex++) {
+            SortedSet<Integer> cell = getCell(cellIndex); 
+            if (cell.contains(elementI) && cell.contains(elementJ)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("[");
@@ -365,14 +417,21 @@ public class Partition {
         return sb.toString();
     }
 
+    
     /**
      * Parse a string like "[0,2|1,3]" to form the partition; cells are 
      * separated by '|' characters and elements within the cell by commas.
      * 
-     * @param strForm
-     * @return
+     * @param strForm the partition in string form
+     * @return the partition corresponding to the string
+     * @throws IllegalArgumentException thrown if the provided strFrom is
+     *         null or empty
      */
     public static Partition fromString(String strForm) {
+
+        if(strForm == null || strForm.isEmpty())
+            throw new IllegalArgumentException("null or empty string provided");
+
         Partition p = new Partition();
         int index = 0;
         if (strForm.charAt(0) == '[') {
@@ -405,7 +464,12 @@ public class Partition {
             } else if (c == '|') {
                 int element = Integer.parseInt(
                         strForm.substring(numStart, index));
-                p.addToCell(currentCell, element);
+                if (currentCell == -1) {
+                    p.addCell(element);
+                    currentCell = 0;
+                } else {
+                    p.addToCell(currentCell, element);
+                }
                 currentCell++;
                 p.addCell();
                 numStart = -1;
@@ -416,5 +480,6 @@ public class Partition {
         p.addToCell(currentCell, lastElement);
         return p;
     }
+
 
 }
