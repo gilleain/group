@@ -1,5 +1,6 @@
 package group;
 
+import java.math.BigInteger;
 import java.util.Set;
 
 import combinatorics.DisjointSetForest;
@@ -148,19 +149,19 @@ public abstract class AbstractDiscretePartitionRefiner {
         return partition;
     }
 
-    public long getCertificate() {
+    public BigInteger getCertificate() {
         return calculateCertificate(this.getBest());
     }
     
-    public long calculateCertificate(Permutation p) {
+    public BigInteger calculateCertificate(Permutation p) {
         int k = 0;
-        long certificate = 0;
+        BigInteger certificate = BigInteger.valueOf(0);
         int n = getVertexCount();
         for (int j = n - 1; j > 0; j--) {
         	for (int i = j - 1; i >= 0; i--) {
         	    // XXX FIXME : won't work properly with edge multiplicity > 1! 
         		if (getConnectivity(p.get(i), p.get(j)) > 0) {
-        			certificate += (int)Math.pow(2, k);
+        			certificate = certificate.add(BigInteger.valueOf((int)Math.pow(2, k)));
         		}
         		k++;
         	}
