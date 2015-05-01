@@ -2,8 +2,10 @@ package combinatorics;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * List all the k-subsets of size k of a set. From CAGES pages ??.
@@ -13,7 +15,7 @@ import java.util.List;
  * @param k the size of the subset
  * @param <T> the type of the elements of the set
  */
-public class KSubsetLister<T> implements Iterable<List<T>> {
+public class KSubsetLister<T> implements Iterable<Set<T>> {
     
     private final List<T> elements;
     
@@ -47,9 +49,9 @@ public class KSubsetLister<T> implements Iterable<List<T>> {
        return -1;	// TODO!
     }
     
-    public List<T> lexUnrank(int rank) {
+    public Set<T> lexUnrank(int rank) {
     	int x = 1;
-    	List<T> t = new ArrayList<T>();
+    	Set<T> t = new HashSet<T>();
     	for (int i = 1; i <= k; i++) {
     		
     		while (choose(size - x, k - i) <= rank) {
@@ -62,18 +64,18 @@ public class KSubsetLister<T> implements Iterable<List<T>> {
     	return t;
     }
 
-    public Iterator<List<T>> iterator() {
+    public Iterator<Set<T>> iterator() {
         final int maxRank = choose(size, k);
         
-        return new Iterator<List<T>>() {
+        return new Iterator<Set<T>>() {
             int rank = 0;
 
             public boolean hasNext() {
                 return rank < maxRank;
             }
 
-            public List<T> next() {
-                List<T> nextSubSet = lexUnrank(rank);
+            public Set<T> next() {
+                Set<T> nextSubSet = lexUnrank(rank);
                 rank++;
                 return nextSubSet;
             }

@@ -32,7 +32,8 @@ public class MultiKSubsetLister<T> implements Iterable<List<T>> {
 	
 	public List<T> lexUnrank(int rank) {
 		List<T> list = new ArrayList<T>();
-		List<Integer> setIndices = indexSubsetLister.lexUnrank(rank);
+		List<Integer> setIndices = new ArrayList<Integer>();
+		setIndices.addAll(indexSubsetLister.lexUnrank(rank));
 		int y = setIndices.get(0);
 		int last = -1;
 		for (int i = 0; i < setIndices.size(); i++) {
