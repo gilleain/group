@@ -82,6 +82,7 @@ public abstract class AbstractEquitablePartitionRefiner {
      */
     public Partition refine(Partition a) {
         Partition b = new Partition(a);
+//        System.out.println("Refining " + a);
         
         // start the queue with the blocks of a in reverse order
         blocksToRefine = new LinkedList<Set<Integer>>();
@@ -101,6 +102,7 @@ public abstract class AbstractEquitablePartitionRefiner {
 
                     // split the block on the basis of these invariants
                     split(invariants, b);
+//                    System.out.println(blocksToRefine);
                 }
                 currentBlockIndex++;
             }
@@ -111,6 +113,7 @@ public abstract class AbstractEquitablePartitionRefiner {
                 return b;
             }
         }
+//        System.out.println("To " + b);
         return b;
     }
     
