@@ -11,18 +11,20 @@ import static org.junit.Assert.assertEquals;
 
 import group.AbstractEquitablePartitionRefiner;
 import group.Partition;
+import group.invariant.IntegerInvariant;
+import group.invariant.Invariant;
 
 public class TestEquitablePartitionRefiner {
     
     private class Lookup {
         public Set<Integer> block;
         public int vertex;
-        public int count;
+        public Invariant count;
         
         public Lookup(Set<Integer> block, int vertex, int count) {
             this.block = block;
             this.vertex = vertex;
-            this.count = count;
+            this.count = new IntegerInvariant(count);
         }
     }
     
@@ -40,13 +42,13 @@ public class TestEquitablePartitionRefiner {
         }
 
         @Override
-        public int neighboursInBlock(Set<Integer> block, int vertexIndex) {
+        public Invariant neighboursInBlock(Set<Integer> block, int vertexIndex) {
             for (Lookup lookup : neighbourCounts) {
                 if (lookup.block.equals(block) && lookup.vertex == vertexIndex) {
                     return lookup.count;
                 }
             }
-            return 0;   // default - only have to provide nonzero values 
+            return new IntegerInvariant(0);   // default - only have to provide nonzero values 
         }
         
     }
@@ -87,6 +89,7 @@ public class TestEquitablePartitionRefiner {
         map.add(new Lookup(make(8), 7, 1));
         
         Impl impl = new Impl(map);
+//        impl.setSplitOrder(SplitOrder.REVERSE);
         Partition a = Partition.fromString("0|2,6,8|5,7|1,3|4");
         Partition b = impl.refine(a);
         System.out.println(b);
